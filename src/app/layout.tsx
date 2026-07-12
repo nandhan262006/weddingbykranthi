@@ -5,7 +5,7 @@ import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
-const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://kranthiphotography.in";
+const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://weddingbykranthi.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
