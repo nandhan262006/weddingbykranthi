@@ -39,7 +39,7 @@ export default function Navbar() {
         scrolled ? "bg-dark/90 backdrop-blur-md shadow-lg" : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <Link href="/" className="flex items-center">
             <Image
@@ -57,15 +57,15 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="relative text-cream/80 hover:text-gold transition-colors duration-300 text-sm uppercase tracking-wider group"
+                className="relative text-cream/70 hover:text-gold transition-colors duration-300 text-sm uppercase tracking-wider group"
               >
                 {link.label}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gold transition-all duration-300 group-hover:w-full" />
+                <span className="absolute -bottom-1 left-0 w-0 h-px bg-gold transition-all duration-300 group-hover:w-full" />
               </Link>
             ))}
             <Link
               href="/admin"
-              className="ml-4 px-4 py-2 border border-gold/40 text-gold hover:bg-gold hover:text-dark transition-all duration-300 text-sm uppercase tracking-wider"
+              className="ml-4 px-4 py-2 border border-gold/30 text-gold hover:bg-gold hover:text-dark transition-all duration-300 text-xs uppercase tracking-wider"
             >
               Admin
             </Link>
@@ -97,7 +97,7 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={closeMobile}
-                  className="block py-2 text-cream/80 hover:text-gold transition-colors text-sm uppercase tracking-wider"
+                  className="block py-2 text-cream/70 hover:text-gold transition-colors text-sm uppercase tracking-wider"
                 >
                   {link.label}
                 </Link>

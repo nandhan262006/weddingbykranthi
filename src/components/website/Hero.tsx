@@ -9,7 +9,7 @@ export default function Hero() {
   useEffect(() => {
     const onScroll = () => {
       if (imgRef.current) {
-        const y = window.scrollY * 0.4;
+        const y = window.scrollY * 0.3;
         imgRef.current.style.transform = `translateY(${y}px)`;
       }
     };
@@ -19,7 +19,7 @@ export default function Hero() {
 
   return (
     <section className="relative h-screen overflow-hidden">
-      <div ref={imgRef} className="absolute -inset-8 will-change-transform">
+      <div ref={imgRef} className="absolute -inset-12 will-change-transform">
         <Image
           src="/images/homepage1.png"
           alt="Wedding photography"
@@ -40,10 +40,32 @@ export default function Hero() {
 
       <div className="hero-overlay absolute inset-0" />
 
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+      <div className="absolute inset-0 flex flex-col items-center justify-end pb-20">
+        <div className="text-center space-y-4 px-4">
+          <p className="text-cream/70 text-lg md:text-xl max-w-xl mx-auto">
+            Capturing love stories across Nellore with artistry and emotion
+          </p>
+          <div className="flex items-center justify-center gap-4 pt-4">
+            <a
+              href="#contact"
+              className="bg-gold text-dark font-semibold px-8 py-3 hover:bg-gold-light transition-colors"
+            >
+              Book Now
+            </a>
+            <a
+              href="#gallery"
+              className="border border-cream/20 text-cream px-8 py-3 hover:border-gold hover:text-gold transition-colors"
+            >
+              View Work
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 animate-bounce">
         <svg
-          width="32"
-          height="32"
+          width="24"
+          height="24"
           viewBox="0 0 24 24"
           fill="none"
           stroke="#D4AF37"

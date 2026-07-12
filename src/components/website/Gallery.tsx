@@ -33,8 +33,8 @@ export default function Gallery({ initialImages }: { initialImages?: GalleryImag
   const sectionRef = useScrollReveal();
 
   const close = useCallback(() => setLightbox(null), []);
-  const next = useCallback(() => setLightbox((p) => (p !== null ? (p + 1) % galleryItems.length : null)), []);
-  const prev = useCallback(() => setLightbox((p) => (p !== null ? (p - 1 + galleryItems.length) % galleryItems.length : null)), []);
+  const next = useCallback(() => setLightbox((p) => (p !== null ? (p + 1) % galleryItems.length : null)), [galleryItems.length]);
+  const prev = useCallback(() => setLightbox((p) => (p !== null ? (p - 1 + galleryItems.length) % galleryItems.length : null)), [galleryItems.length]);
 
   useEffect(() => {
     if (lightbox === null) return;
@@ -53,35 +53,45 @@ export default function Gallery({ initialImages }: { initialImages?: GalleryImag
 
   return (
     <section id="gallery" className="py-24 bg-dark">
-      <div ref={sectionRef} className="fade-in-up max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div ref={sectionRef} className="fade-in-up max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+          <p className="text-gold text-sm uppercase tracking-[0.3em] mb-3">Portfolio</p>
+          <h2 className="text-4xl md:text-5xl font-bold">
             <span className="text-gradient">Gallery</span>
           </h2>
-          <div className="w-20 h-0.5 bg-gold mx-auto" />
+          <div className="w-16 h-px bg-gold mx-auto mt-6" />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 auto-rows-[200px] md:auto-rows-[260px]">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
           {galleryItems.map((item, i) => (
             <div
               key={i}
-              className="relative overflow-hidden group cursor-pointer"
+              className="relative overflow-hidden group cursor-pointer aspect-square"
               onClick={() => setLightbox(i)}
             >
               <Image
                 src={item.src}
                 alt={item.caption}
                 fill
-                className="object-cover transition-transform duration-500 group-hover:scale-110"
+                className="object-cover transition-transform duration-700 group-hover:scale-110"
                 sizes="(max-width: 768px) 50vw, 33vw"
               />
-              <div className="absolute inset-0 bg-dark/0 group-hover:bg-dark/60 transition-all duration-300 flex items-end p-4">
-                <span className="text-cream text-sm font-medium opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-t from-dark/80 via-dark/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                <span className="text-cream text-sm font-medium">
                   {item.caption}
                 </span>
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="text-center mt-12">
+          <a
+            href="/gallery"
+            className="inline-block border border-gold text-gold font-semibold px-10 py-3 hover:bg-gold hover:text-dark transition-all duration-300"
+          >
+            View Full Gallery
+          </a>
         </div>
       </div>
 
@@ -92,7 +102,7 @@ export default function Gallery({ initialImages }: { initialImages?: GalleryImag
         >
           <button
             onClick={close}
-            className="absolute top-6 right-6 text-cream/60 hover:text-gold transition-colors"
+            className="absolute top-6 right-6 text-cream/50 hover:text-gold transition-colors z-10"
             aria-label="Close"
           >
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -100,7 +110,7 @@ export default function Gallery({ initialImages }: { initialImages?: GalleryImag
 
           <button
             onClick={(e) => { e.stopPropagation(); prev(); }}
-            className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 text-cream/60 hover:text-gold transition-colors"
+            className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 text-cream/50 hover:text-gold transition-colors z-10"
             aria-label="Previous"
           >
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
@@ -115,14 +125,14 @@ export default function Gallery({ initialImages }: { initialImages?: GalleryImag
               sizes="100vw"
               priority
             />
-            <div className="absolute bottom-4 left-0 right-0 text-center text-cream/70 text-sm">
+            <div className="absolute bottom-4 left-0 right-0 text-center text-cream/60 text-sm">
               {galleryItems[lightbox].caption}
             </div>
           </div>
 
           <button
             onClick={(e) => { e.stopPropagation(); next(); }}
-            className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 text-cream/60 hover:text-gold transition-colors"
+            className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 text-cream/50 hover:text-gold transition-colors z-10"
             aria-label="Next"
           >
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>

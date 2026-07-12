@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useScrollReveal } from "./useScrollReveal";
 
@@ -20,25 +20,6 @@ interface ServiceItem {
   description?: string | null;
 }
 
-const RADIUS = 380;
-const ANGLE_STEP = 60;
-
-function getCardStyle(index: number, active: number, total: number) {
-  const raw = ((index - active) % total + total) % total;
-  const offset = raw > total / 2 ? raw - total : raw;
-  const angle = offset * ANGLE_STEP;
-  const abs = Math.abs(offset);
-  const sc = abs === 0 ? 1 : abs === 1 ? 0.88 : 0.75;
-  const op = abs <= 2 ? 1 - abs * 0.3 : 0;
-  const z = abs === 0 ? 10 : 0;
-
-  return {
-    transform: `rotateY(${angle}deg) translateZ(${RADIUS}px) scale(${sc})`,
-    opacity: op,
-    zIndex: z,
-  };
-}
-
 export default function Services({ initialServices }: { initialServices?: ServiceItem[] }) {
   const services = initialServices?.length
     ? initialServices.map((s) => ({
@@ -47,117 +28,201 @@ export default function Services({ initialServices }: { initialServices?: Servic
         desc: s.description || s.subtitle || "",
       }))
     : defaultServices;
-  const [active, setActive] = useState(0);
-  const [dragStart, setDragStart] = useState<number | null>(null);
-  const sectionRef = useScrollReveal();
-  const total = services.length;
 
-  const goTo = useCallback(
-    (i: number) => setActive(((i % total) + total) % total),
-    [total]
+  const [activeIdx, setActiveIdx] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const stateRef = useRef({ startX: 0, lastX: 0, velocity: 0, idx: 0, dragging: false, width: 0 });
+  const sectionRef = useScrollReveal();
+
+  const snap = useCallback(
+    (idx: number) => {
+      const s = stateRef.current;
+      s.idx = Math.max(0, Math.min(services.length - 1, idx));
+      setActiveIdx(s.idx);
+    },
+    [services.length]
   );
 
-  const handlePointerDown = (e: React.PointerEvent) => setDragStart(e.clientX);
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (dragStart === null) return;
-    const diff = dragStart - e.clientX;
-    if (Math.abs(diff) > 50) goTo(active + (diff > 0 ? 1 : -1));
-    setDragStart(null);
-  };
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || services.length === 0) return;
+    const s = stateRef.current;
+    s.width = el.clientWidth;
+    s.idx = 0;
+
+    const ro = new ResizeObserver(() => {
+      s.width = el.clientWidth;
+    });
+    ro.observe(el);
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const idx = s.idx + (e.deltaY > 0 ? 1 : -1);
+      snap(idx);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+
+    return () => {
+      ro.disconnect();
+      el.removeEventListener("wheel", onWheel);
+    };
+  }, [services.length, snap]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") goTo(active + 1);
-      if (e.key === "ArrowLeft") goTo(active - 1);
+      if (e.key === "ArrowRight") snap(stateRef.current.idx + 1);
+      if (e.key === "ArrowLeft") snap(stateRef.current.idx - 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [active, goTo]);
+  }, [snap]);
 
-  const lastWheelTime = useRef(0);
+  const onPointerDown = (e: React.PointerEvent) => {
+    const s = stateRef.current;
+    s.startX = e.clientX;
+    s.lastX = e.clientX;
+    s.velocity = 0;
+    s.dragging = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
 
-  const handleWheel = useCallback(
-    (e: React.WheelEvent) => {
-      const now = Date.now();
-      if (now - lastWheelTime.current < 500) return;
-      if (Math.abs(e.deltaY) > 30) {
-        lastWheelTime.current = now;
-        goTo(active + (e.deltaY > 0 ? 1 : -1));
-      }
-    },
-    [active, goTo]
-  );
+  const onPointerMove = (e: React.PointerEvent) => {
+    const s = stateRef.current;
+    if (!s.dragging) return;
+    const dx = e.clientX - s.lastX;
+    s.lastX = e.clientX;
+    s.velocity = dx * 0.4 + s.velocity * 0.6;
+    const threshold = s.width * 0.2;
+    if (Math.abs(dx) > threshold) {
+      const dir = dx > 0 ? -1 : 1;
+      s.dragging = false;
+      e.currentTarget.releasePointerCapture(e.pointerId);
+      snap(s.idx + dir);
+    }
+  };
+
+  const onPointerUp = () => {
+    const s = stateRef.current;
+    if (!s.dragging) return;
+    s.dragging = false;
+    if (Math.abs(s.velocity) > 0.3) {
+      snap(s.idx + (s.velocity > 0 ? -1 : 1));
+    }
+  };
 
   return (
-    <section id="services" className="py-24 bg-dark overflow-hidden">
-      <div ref={sectionRef} className="fade-in-up max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="text-gradient">Our Services</span>
-          </h2>
-          <div className="w-20 h-0.5 bg-gold mx-auto" />
-        </div>
+    <section id="services" className="relative bg-dark-surface overflow-hidden">
+      <div ref={sectionRef} className="fade-in-up text-center pt-24 pb-8 px-4 max-w-7xl mx-auto">
+        <p className="text-gold text-sm uppercase tracking-[0.3em] mb-3">What We Offer</p>
+        <h2 className="text-4xl md:text-5xl font-bold">
+          <span className="text-gradient">Our Services</span>
+        </h2>
+        <div className="w-16 h-px bg-gold mx-auto mt-6 mb-6" />
+        <p className="text-cream/60 max-w-2xl mx-auto">
+          Comprehensive wedding photography and cinematography services tailored to make your special day unforgettable.
+        </p>
+      </div>
 
-        <div
-          className="relative h-[540px] mx-auto max-w-4xl select-none"
-          style={{ perspective: "1200px" }}
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
-          onWheel={handleWheel}
-        >
-          {services.map((service, i) => (
-            <div
-              key={i}
-              className="absolute top-0 left-1/2 w-80 -ml-40 transition-all duration-500 ease-out cursor-grab active:cursor-grabbing"
-              style={getCardStyle(i, active, total)}
-              onClick={() => goTo(i)}
-            >
-              <div className="bg-dark-card/90 backdrop-blur-sm gold-border gold-glow">
-                <div className="relative h-80">
-                  <Image
-                    src={service.image}
-                    alt={service.title}
-                    fill
-                    className="object-contain"
-                    sizes="320px"
-                  />
-                </div>
-                <div className="p-5">
-                  <h3 className="text-lg font-semibold text-gold mb-2">{service.title}</h3>
-                  <p className="text-cream/60 text-sm leading-relaxed">{service.desc}</p>
+      <div
+        ref={containerRef}
+        className="select-none pb-8"
+        style={{ perspective: "1200px", touchAction: "pan-y" }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        <div className="flex items-center justify-center min-h-[400px] sm:h-[600px] md:h-[700px] relative">
+          {services.map((service, i) => {
+            const diff = i - activeIdx;
+            const abs = Math.abs(diff);
+            const isActive = diff === 0;
+
+            const rotateY = diff * -25;
+            const translateZ = isActive ? 200 : abs === 1 ? 50 : -200;
+            const translateX = diff * 120;
+            const scale = 1 - abs * 0.12;
+            const opacity = 1 - abs * 0.25;
+            const zIndex = services.length - abs;
+
+            return (
+              <div
+                key={i}
+                className="absolute w-[85%] md:w-[500px] transition-all duration-500 ease-out cursor-grab active:cursor-grabbing"
+                style={{
+                  transform: `translateX(${translateX}px) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
+                  opacity: opacity < 0 ? 0 : opacity,
+                  zIndex,
+                  transformStyle: "preserve-3d",
+                  pointerEvents: isActive ? "auto" : "none",
+                }}
+                onClick={() => !isActive && snap(i)}
+              >
+                <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden bg-transparent">
+                  {service.image ? (
+                    <Image
+                      src={service.image}
+                      alt={service.title}
+                      fill
+                      className="object-cover"
+                      sizes="90vw"
+                      draggable={false}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-dark-card" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 text-cream">
+                    <h3 className="text-2xl md:text-3xl font-bold mb-2">{service.title}</h3>
+                    <p className="text-cream/80 text-sm md:text-base leading-relaxed line-clamp-2">
+                      {service.desc}
+                    </p>
+                    <div className="mt-4 flex items-center gap-2 text-gold text-sm font-medium">
+                      <span className="w-6 h-px bg-gold" />
+                      Learn More
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-
-          <button
-            onClick={() => goTo(active - 1)}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center bg-dark-card/80 border border-gold/30 text-gold hover:bg-gold hover:text-dark transition-all"
-            aria-label="Previous"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
-          </button>
-          <button
-            onClick={() => goTo(active + 1)}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center bg-dark-card/80 border border-gold/30 text-gold hover:bg-gold hover:text-dark transition-all"
-            aria-label="Next"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
-          </button>
+            );
+          })}
         </div>
+      </div>
 
-        <div className="flex justify-center gap-2 mt-8">
-          {services.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => goTo(i)}
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                i === active ? "bg-gold w-8" : "bg-cream/30 hover:bg-cream/50"
-              }`}
-              aria-label={`Slide ${i + 1}`}
-            />
-          ))}
-        </div>
+      <div className="flex justify-between absolute top-1/2 left-2 right-2 sm:left-4 sm:right-4 -translate-y-1/2 pointer-events-none z-10">
+        <button
+          onClick={() => snap(activeIdx - 1)}
+          disabled={activeIdx === 0}
+          className="pointer-events-auto w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-dark-card/90 backdrop-blur border border-gold/30 text-gold hover:bg-gold hover:text-dark transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+          aria-label="Previous service"
+        >
+          <svg width="16" height="16" className="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+        <button
+          onClick={() => snap(activeIdx + 1)}
+          disabled={activeIdx === services.length - 1}
+          className="pointer-events-auto w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-dark-card/90 backdrop-blur border border-gold/30 text-gold hover:bg-gold hover:text-dark transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+          aria-label="Next service"
+        >
+          <svg width="16" height="16" className="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="flex justify-center gap-2 pb-8">
+        {services.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => snap(i)}
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              i === activeIdx ? "bg-gold w-6" : "bg-cream/20 hover:bg-cream/40 w-1.5"
+            }`}
+            aria-label={`Slide ${i + 1}`}
+          />
+        ))}
       </div>
     </section>
   );
