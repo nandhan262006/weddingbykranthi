@@ -29,7 +29,7 @@ export default function Hero() {
           sizes="100vw"
         />
         <Image
-          src="/homepagemobile.png"
+          src="/images/homepage1mobile.png"
           alt="Wedding photography"
           fill
           className="object-cover object-center md:hidden"
