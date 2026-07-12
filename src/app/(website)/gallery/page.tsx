@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Gallery - Wedding by Kranthi",
     description: "Browse our stunning wedding photography gallery. Candid moments, grand celebrations, and cinematic highlights from Nellore.",
-    images: ["/images/og-image.webp"],
+    images: ["/images/unnamed (6).webp"],
   },
   alternates: {
     canonical: "/gallery",
