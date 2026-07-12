@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth();
+  if (auth) return auth;
+
   try {
     const { id } = await params;
     const image = await prisma.galleryImage.findUnique({ where: { id } });
@@ -15,6 +19,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth();
+  if (auth) return auth;
+
   try {
     const { id } = await params;
     const body = await request.json();
@@ -34,8 +41,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth();
+  if (auth) return auth;
+
   try {
     const { id } = await params;
+    const existing = await prisma.galleryImage.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: "Image not found" }, { status: 404 });
+    }
     await prisma.galleryImage.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {

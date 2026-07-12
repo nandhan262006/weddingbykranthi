@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth();
+  if (auth) return auth;
+
   try {
     const { id } = await params;
     const post = await prisma.blogPost.findUnique({ where: { id } });
@@ -15,12 +19,20 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth();
+  if (auth) return auth;
+
   try {
     const { id } = await params;
     const body = await request.json();
+    const slug = String(body.slug || "");
+    const existingSlug = await prisma.blogPost.findFirst({ where: { slug, NOT: { id } } });
+    if (existingSlug) {
+      return NextResponse.json({ error: "A post with this slug already exists" }, { status: 409 });
+    }
     const data = {
       title: String(body.title || ""),
-      slug: String(body.slug || ""),
+      slug,
       excerpt: body.excerpt ? String(body.excerpt) : null,
       content: body.content ? String(body.content) : null,
       coverImage: body.coverImage ? String(body.coverImage) : null,
@@ -34,8 +46,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth();
+  if (auth) return auth;
+
   try {
     const { id } = await params;
+    const existing = await prisma.blogPost.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
     await prisma.blogPost.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {

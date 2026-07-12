@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar, SidebarItems, SidebarItemGroup, SidebarItem } from "flowbite-react";
 import { HiHome, HiBriefcase, HiPhoto, HiStar, HiUser, HiDocumentText, HiEnvelope, HiCog6Tooth, HiArrowRightOnRectangle } from "react-icons/hi2";
@@ -19,13 +20,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
 
-  if (pathname === "/admin/login") {
-    return <>{children}</>;
-  }
+  useEffect(() => {
+    if (pathname === "/admin/login") return;
+    fetch("/api/auth/verify")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.authenticated) router.replace("/admin/login");
+      })
+      .catch(() => router.replace("/admin/login"));
+  }, [pathname, router]);
 
-  async function handleLogout() {
+  const handleLogout = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/admin/login");
+  }, [router]);
+
+  if (pathname === "/admin/login") {
+    return <>{children}</>;
   }
 
   return (

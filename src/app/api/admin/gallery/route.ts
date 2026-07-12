@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function GET() {
+  const auth = await requireAuth();
+  if (auth) return auth;
+
   try {
     const items = await prisma.galleryImage.findMany({ orderBy: { sortOrder: "asc" } });
     return NextResponse.json(items);
@@ -11,6 +15,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth();
+  if (auth) return auth;
+
   try {
     const body = await request.json();
     const data = {
