@@ -19,7 +19,7 @@ export default function Hero() {
 
   return (
     <section className="relative h-screen overflow-hidden">
-      <div ref={imgRef} className="absolute inset-0 will-change-transform">
+      <div ref={imgRef} className="absolute -inset-8 will-change-transform">
         <Image
           src="/images/homepage1.png"
           alt="Wedding photography"

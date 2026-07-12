@@ -20,22 +20,23 @@ interface ServiceItem {
   description?: string | null;
 }
 
-function getOffset(index: number, active: number, total: number): number {
-  const raw = ((index - active) % total + total) % total;
-  return raw > total / 2 ? raw - total : raw;
-}
+const RADIUS = 380;
+const ANGLE_STEP = 60;
 
 function getCardStyle(index: number, active: number, total: number) {
-  const d = getOffset(index, active, total);
-  const abs = Math.abs(d);
-  const tx = d * 280;
-  const tz = abs === 0 ? 60 : abs === 1 ? -100 : -250;
-  const ry = d * -25;
-  const sc = abs === 0 ? 1 : abs === 1 ? 0.85 : 0.7;
+  const raw = ((index - active) % total + total) % total;
+  const offset = raw > total / 2 ? raw - total : raw;
+  const angle = offset * ANGLE_STEP;
+  const abs = Math.abs(offset);
+  const sc = abs === 0 ? 1 : abs === 1 ? 0.88 : 0.75;
   const op = abs <= 2 ? 1 - abs * 0.3 : 0;
   const z = abs === 0 ? 10 : 0;
 
-  return { transform: `translateX(${tx}px) translateZ(${tz}px) rotateY(${ry}deg) scale(${sc})`, opacity: op, zIndex: z };
+  return {
+    transform: `rotateY(${angle}deg) translateZ(${RADIUS}px) scale(${sc})`,
+    opacity: op,
+    zIndex: z,
+  };
 }
 
 export default function Services({ initialServices }: { initialServices?: ServiceItem[] }) {
