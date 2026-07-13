@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const PROJECT_ROOT = process.cwd();
+
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -21,7 +23,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.cloudinary.com",
       "font-src 'self'",
-      "connect-src 'self'",
+      "connect-src 'self' https://*.cloudinary.com",
       "frame-src https://www.google.com https://maps.google.com",
       "media-src 'self'",
     ].join("; "),
@@ -29,6 +31,17 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: PROJECT_ROOT,
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
+    ],
+  },
   async headers() {
     return [
       {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
+import { serviceSchema } from "@/lib/validations";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth();
@@ -25,15 +26,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const { id } = await params;
     const body = await request.json();
-    const data = {
-      title: String(body.title || ""),
-      subtitle: body.subtitle ? String(body.subtitle) : null,
-      description: body.description ? String(body.description) : null,
-      image: body.image ? String(body.image) : null,
-      sortOrder: Number(body.sortOrder || 0),
-      isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
-    };
-    const service = await prisma.service.update({ where: { id }, data });
+    const parsed = serviceSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.errors[0]?.message || "Validation failed" },
+        { status: 400 }
+      );
+    }
+
+    const service = await prisma.service.update({ where: { id }, data: parsed.data });
     return NextResponse.json(service);
   } catch {
     return NextResponse.json({ error: "Failed to update service" }, { status: 500 });

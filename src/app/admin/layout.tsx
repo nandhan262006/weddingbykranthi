@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { HiHome, HiBriefcase, HiPhoto, HiStar, HiUser, HiDocumentText, HiEnvelope, HiCog6Tooth, HiArrowRightOnRectangle, HiBars3, HiXMark } from "react-icons/hi2";
+import { HiHome, HiBriefcase, HiPhoto, HiStar, HiUser, HiDocumentText, HiEnvelope, HiCog6Tooth, HiArrowRightOnRectangle, HiBars3, HiXMark, HiSparkles } from "react-icons/hi2";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: HiHome },
@@ -15,24 +16,58 @@ const navItems = [
   { href: "/admin/settings", label: "Settings", icon: HiCog6Tooth },
 ];
 
+const breadcrumbMap: Record<string, string> = {
+  "/admin": "Dashboard",
+  "/admin/services": "Services",
+  "/admin/gallery": "Gallery",
+  "/admin/google-reviews": "Reviews",
+  "/admin/blog": "Blog",
+  "/admin/about": "About",
+  "/admin/contacts": "Contacts",
+  "/admin/settings": "Settings",
+};
+
+function SidebarSkeleton() {
+  return (
+    <div className="fixed inset-y-0 left-0 z-50 w-72 bg-[#0A0A0A] border-r border-white/[0.06] flex flex-col">
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-white/[0.06]">
+        <div className="w-10 h-10 rounded-xl bg-white/[0.04] animate-pulse" />
+        <div className="space-y-2">
+          <div className="w-28 h-4 rounded bg-white/[0.04] animate-pulse" />
+          <div className="w-16 h-3 rounded bg-white/[0.04] animate-pulse" />
+        </div>
+      </div>
+      <nav className="flex-1 py-4 px-3 space-y-1">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="h-10 rounded-xl bg-white/[0.03] animate-pulse" />
+        ))}
+      </nav>
+      <div className="border-t border-white/[0.06] p-3 space-y-1">
+        <div className="h-10 rounded-xl bg-white/[0.03] animate-pulse" />
+        <div className="h-10 rounded-xl bg-white/[0.03] animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const didVerify = useRef(false);
 
   useEffect(() => {
-    if (pathname === "/admin/login") return;
+    if (pathname === "/admin/login" || didVerify.current) return;
+    didVerify.current = true;
     fetch("/api/auth/verify")
       .then((r) => r.json())
       .then((data) => {
         if (!data.authenticated) router.replace("/admin/login");
+        else setVerified(true);
       })
       .catch(() => router.replace("/admin/login"));
   }, [pathname, router]);
-
-  const handleNavigate = useCallback(() => {
-    setSidebarOpen(false);
-  }, []);
 
   const handleLogout = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -43,39 +78,57 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
+  if (!verified) {
+    return (
+      <div className="flex h-screen bg-[#0A0A0A]">
+        <SidebarSkeleton />
+        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#B8960E] flex items-center justify-center animate-pulse">
+              <HiSparkles className="w-6 h-6 text-[#0A0A0A]" />
+            </div>
+          </div>
+          <p className="text-white/40 text-sm font-medium">Loading admin panel...</p>
+        </div>
+      </div>
+    );
+  }
+
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin";
     return pathname.startsWith(href);
   };
 
+  const currentLabel = Object.entries(breadcrumbMap).find(([key]) => pathname === key || (key !== "/admin" && pathname.startsWith(key)))?.[1];
+
   return (
-    <div className="flex h-screen bg-[#0c0c0c]">
+    <div className="flex h-screen bg-[#0A0A0A]">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#111111] border-r border-white/5 flex flex-col transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#0A0A0A] border-r border-white/[0.06] flex flex-col transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-white/5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#B8960E] flex items-center justify-center">
-            <span className="text-[#0c0c0c] font-bold text-lg">K</span>
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-white/[0.06]">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#B8960E] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20">
+            <span className="text-[#0A0A0A] font-bold text-lg">K</span>
           </div>
           <div>
             <h1 className="text-white font-semibold text-sm leading-tight">Wedding by Kranthi</h1>
-            <p className="text-white/40 text-xs">Admin Panel</p>
+            <p className="text-white/30 text-xs font-medium">Admin Panel</p>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="ml-auto lg:hidden p-1 text-white/40 hover:text-white"
+            className="ml-auto lg:hidden p-2 text-white/30 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <HiXMark className="w-5 h-5" />
           </button>
@@ -83,60 +136,72 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 px-3">
-          <div className="space-y-1">
-            {navItems.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={handleNavigate}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive(item.href)
-                    ? "bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20"
-                    : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
-                }`}
-              >
-                <item.icon className={`w-5 h-5 ${isActive(item.href) ? "text-[#D4AF37]" : ""}`} />
-                {item.label}
-              </a>
-            ))}
+          <p className="px-3 mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/20">
+            Navigation
+          </p>
+          <div className="space-y-0.5">
+            {navItems.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                    active
+                      ? "bg-[#D4AF37]/10 text-[#D4AF37]"
+                      : "text-white/40 hover:text-white/80 hover:bg-white/[0.03]"
+                  }`}
+                >
+                  <item.icon className={`w-5 h-5 transition-colors ${active ? "text-[#D4AF37]" : "text-white/20 group-hover:text-white/50"}`} />
+                  {item.label}
+                  {active && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
+                  )}
+                </Link>
+              );
+            })}
           </div>
         </nav>
 
         {/* Bottom actions */}
-        <div className="border-t border-white/5 p-3 space-y-1">
-          <a
+        <div className="border-t border-white/[0.06] p-3 space-y-1">
+          <Link
             href="/"
             target="_blank"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-all"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/40 hover:text-white/70 hover:bg-white/[0.03] transition-all"
           >
             <HiArrowRightOnRectangle className="w-5 h-5" />
-            View Site
-          </a>
+            View Website
+          </Link>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-red-400 hover:bg-red-500/10 transition-all"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/40 hover:text-red-400 hover:bg-red-500/[0.08] transition-all"
           >
             <HiArrowRightOnRectangle className="w-5 h-5" />
-            Logout
+            Sign Out
           </button>
         </div>
       </aside>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar (mobile) */}
-        <header className="lg:hidden flex items-center gap-4 px-4 py-3 bg-[#111111] border-b border-white/5">
+        {/* Top bar */}
+        <header className="flex items-center gap-4 px-6 py-3 bg-[#0A0A0A] border-b border-white/[0.06]">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg"
+            className="lg:hidden p-2 text-white/40 hover:text-white hover:bg-white/[0.04] rounded-lg transition-colors"
           >
             <HiBars3 className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#D4AF37] to-[#B8960E] flex items-center justify-center">
-              <span className="text-[#0c0c0c] font-bold text-sm">K</span>
-            </div>
-            <span className="text-white font-medium text-sm">Admin</span>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-white/20">Admin</span>
+            {currentLabel && (
+              <>
+                <span className="text-white/10">/</span>
+                <span className="text-white/50 font-medium">{currentLabel}</span>
+              </>
+            )}
           </div>
         </header>
 

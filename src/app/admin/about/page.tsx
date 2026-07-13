@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, TextInput, Textarea, Label, Card } from "flowbite-react";
 import FileUpload from "@/components/admin/FileUpload";
 import Toast from "@/components/admin/Toast";
+import { FormSkeleton } from "@/components/admin/Skeleton";
 
 export default function AboutPage() {
   const [form, setForm] = useState({ title: "", content: "", image: "", tags: "" });
@@ -25,9 +25,7 @@ export default function AboutPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/about", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form),
       });
       if (!res.ok) throw new Error("Failed");
       setToast({ message: "About section saved", type: "success" });
@@ -38,33 +36,45 @@ export default function AboutPage() {
     }
   }
 
-  if (fetching) return <p>Loading...</p>;
+  if (fetching) return <FormSkeleton />;
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="mb-4 text-2xl font-bold text-white">About Section</h1>
-      <Card>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <div className="max-w-2xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-white">About Section</h1>
+        <p className="text-white/30 text-sm mt-1">Edit the about content displayed on your website</p>
+      </div>
+      <div className="bg-[#0A0A0A] border border-white/[0.06] rounded-2xl p-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <Label htmlFor="title" className="mb-2 block">Title</Label>
-            <TextInput id="title" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            <label className="block text-white/40 text-xs font-medium uppercase tracking-wider mb-2">Title</label>
+            <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="w-full bg-white/[0.03] border border-white/[0.08] text-white px-4 py-2.5 rounded-xl text-sm focus:border-[#D4AF37]/50 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/20 transition-colors" />
           </div>
           <div>
-            <Label htmlFor="content" className="mb-2 block">Content</Label>
-            <Textarea id="content" rows={8} required value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
+            <label className="block text-white/40 text-xs font-medium uppercase tracking-wider mb-2">Content</label>
+            <textarea rows={10} required value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })}
+              className="w-full bg-white/[0.03] border border-white/[0.08] text-white px-4 py-2.5 rounded-xl text-sm focus:border-[#D4AF37]/50 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/20 transition-colors resize-none" />
           </div>
           <div>
-            <Label className="mb-2 block">Image</Label>
-            {form.image && <img src={form.image} alt="Preview" className="mb-2 h-32 w-32 object-cover rounded" />}
+            <label className="block text-white/40 text-xs font-medium uppercase tracking-wider mb-2">Image</label>
+            {form.image && <img src={form.image} alt="Preview" className="mb-3 h-32 w-32 object-cover rounded-xl" />}
             <FileUpload onUpload={(url) => setForm({ ...form, image: url })} folder="about" />
           </div>
           <div>
-            <Label htmlFor="tags" className="mb-2 block">Tags (comma-separated)</Label>
-            <TextInput id="tags" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+            <label className="block text-white/40 text-xs font-medium uppercase tracking-wider mb-2">
+              Tags <span className="text-white/20 normal-case">(comma-separated)</span>
+            </label>
+            <input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })}
+              className="w-full bg-white/[0.03] border border-white/[0.08] text-white px-4 py-2.5 rounded-xl text-sm focus:border-[#D4AF37]/50 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/20 transition-colors"
+              placeholder="Candid, Traditional, Cinematic" />
           </div>
-          <Button type="submit" disabled={loading}>{loading ? "Saving..." : "Save"}</Button>
+          <button type="submit" disabled={loading}
+            className="w-full bg-[#D4AF37] hover:bg-[#C4A030] text-[#0A0A0A] font-medium py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50">
+            {loading ? "Saving..." : "Save About Section"}
+          </button>
         </form>
-      </Card>
+      </div>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );

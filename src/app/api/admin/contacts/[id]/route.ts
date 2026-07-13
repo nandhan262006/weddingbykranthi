@@ -1,22 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
+import { contactReadSchema } from "@/lib/validations";
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth();
   if (auth) return auth;
 
   try {
     const { id } = await params;
-    const body = await request.json();
     const existing = await prisma.contactSubmission.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: "Contact not found" }, { status: 404 });
     }
-    const data = {
-      isRead: body.isRead !== undefined ? Boolean(body.isRead) : undefined,
-    };
-    const contact = await prisma.contactSubmission.update({ where: { id }, data });
+
+    const body = await request.json();
+    const parsed = contactReadSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.errors[0]?.message || "Validation failed" },
+        { status: 400 }
+      );
+    }
+
+    const contact = await prisma.contactSubmission.update({
+      where: { id },
+      data: { isRead: parsed.data.isRead },
+    });
     return NextResponse.json(contact);
   } catch {
     return NextResponse.json({ error: "Failed to update contact" }, { status: 500 });

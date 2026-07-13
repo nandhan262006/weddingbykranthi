@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
+import { blogPostSchema } from "@/lib/validations";
 
 export async function GET() {
   const auth = await requireAuth();
@@ -20,20 +21,22 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const slug = String(body.slug || "");
+    const parsed = blogPostSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.errors[0]?.message || "Validation failed" },
+        { status: 400 }
+      );
+    }
+
+    const { slug } = parsed.data;
     const existing = await prisma.blogPost.findUnique({ where: { slug } });
     if (existing) {
       return NextResponse.json({ error: "A post with this slug already exists" }, { status: 409 });
     }
-    const data = {
-      title: String(body.title || ""),
-      slug,
-      excerpt: body.excerpt ? String(body.excerpt) : null,
-      content: body.content ? String(body.content) : null,
-      coverImage: body.coverImage ? String(body.coverImage) : null,
-      isPublished: Boolean(body.isPublished),
-    };
-    const post = await prisma.blogPost.create({ data });
+
+    const post = await prisma.blogPost.create({ data: parsed.data });
     return NextResponse.json(post, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Failed to create blog post" }, { status: 500 });

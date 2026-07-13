@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { useRouter } from "next/navigation";
-import { Button, TextInput, Textarea, Label, Card } from "flowbite-react";
 import Toast from "@/components/admin/Toast";
+import { FormSkeleton } from "@/components/admin/Skeleton";
 
-export default function EditGoogleReviewPage({ params }: { params: Promise<{ id: string }> }) {
+export default function EditReviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
-  const [form, setForm] = useState({ name: "", text: "", rating: 5, date: "", sortOrder: 0, isActive: true });
+  const [form, setForm] = useState({ name: "", text: "", rating: 5, date: "", isActive: true, sortOrder: 0 });
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -17,7 +15,10 @@ export default function EditGoogleReviewPage({ params }: { params: Promise<{ id:
     fetch(`/api/admin/google-reviews/${id}`)
       .then((r) => r.json())
       .then((item) => {
-        if (item && !item.error) setForm({ name: item.name, text: item.text, rating: item.rating, date: item.date || "", sortOrder: item.sortOrder, isActive: item.isActive });
+        if (item && !item.error) setForm({
+          name: item.name, text: item.text, rating: item.rating,
+          date: item.date || "", isActive: item.isActive, sortOrder: item.sortOrder,
+        });
       })
       .finally(() => setFetching(false));
   }, [id]);
@@ -27,55 +28,63 @@ export default function EditGoogleReviewPage({ params }: { params: Promise<{ id:
     setLoading(true);
     try {
       const res = await fetch(`/api/admin/google-reviews/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form),
       });
       if (!res.ok) throw new Error("Failed");
       setToast({ message: "Review updated", type: "success" });
-      setTimeout(() => router.push("/admin/google-reviews"), 500);
     } catch {
       setToast({ message: "Failed to update review", type: "error" });
+    } finally {
       setLoading(false);
     }
   }
 
-  if (fetching) return <p>Loading...</p>;
+  if (fetching) return <FormSkeleton />;
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="mb-4 text-2xl font-bold text-white">Edit Google Review</h1>
-      <Card>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <div className="max-w-2xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-white">Edit Review</h1>
+        <p className="text-white/30 text-sm mt-1">Update review details</p>
+      </div>
+      <div className="bg-[#0A0A0A] border border-white/[0.06] rounded-2xl p-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <Label htmlFor="name" className="mb-2 block">Reviewer Name</Label>
-            <TextInput id="name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <label className="block text-white/40 text-xs font-medium uppercase tracking-wider mb-2">Name</label>
+            <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="w-full bg-white/[0.03] border border-white/[0.08] text-white px-4 py-2.5 rounded-xl text-sm focus:border-[#D4AF37]/50 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/20 transition-colors" />
           </div>
           <div>
-            <Label htmlFor="text" className="mb-2 block">Review Text</Label>
-            <Textarea id="text" rows={4} required value={form.text} onChange={(e) => setForm({ ...form, text: e.target.value })} />
+            <label className="block text-white/40 text-xs font-medium uppercase tracking-wider mb-2">Review Text</label>
+            <textarea required rows={4} value={form.text} onChange={(e) => setForm({ ...form, text: e.target.value })}
+              className="w-full bg-white/[0.03] border border-white/[0.08] text-white px-4 py-2.5 rounded-xl text-sm focus:border-[#D4AF37]/50 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/20 transition-colors resize-none" />
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="rating" className="mb-2 block">Rating (1-5)</Label>
-              <TextInput id="rating" type="number" min={1} max={5} value={form.rating} onChange={(e) => setForm({ ...form, rating: Number(e.target.value) })} />
-            </div>
-            <div>
-              <Label htmlFor="date" className="mb-2 block">Date</Label>
-              <TextInput id="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} placeholder="e.g. January 2026" />
-            </div>
-            <div>
-              <Label htmlFor="sortOrder" className="mb-2 block">Sort Order</Label>
-              <TextInput id="sortOrder" type="number" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} />
-            </div>
+          <div>
+            <label className="block text-white/40 text-xs font-medium uppercase tracking-wider mb-2">Rating (1-5)</label>
+            <input type="number" min={1} max={5} value={form.rating} onChange={(e) => setForm({ ...form, rating: Number(e.target.value) })}
+              className="w-full bg-white/[0.03] border border-white/[0.08] text-white px-4 py-2.5 rounded-xl text-sm focus:border-[#D4AF37]/50 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/20 transition-colors" />
           </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" id="isActive" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4" />
-            <Label htmlFor="isActive">Active</Label>
+          <div>
+            <label className="block text-white/40 text-xs font-medium uppercase tracking-wider mb-2">Date</label>
+            <input value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
+              className="w-full bg-white/[0.03] border border-white/[0.08] text-white px-4 py-2.5 rounded-xl text-sm focus:border-[#D4AF37]/50 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/20 transition-colors" />
           </div>
-          <Button type="submit" disabled={loading}>{loading ? "Updating..." : "Update Review"}</Button>
+          <div>
+            <label className="block text-white/40 text-xs font-medium uppercase tracking-wider mb-2">Sort Order</label>
+            <input type="number" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })}
+              className="w-full bg-white/[0.03] border border-white/[0.08] text-white px-4 py-2.5 rounded-xl text-sm focus:border-[#D4AF37]/50 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/20 transition-colors" />
+          </div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+              className="w-4 h-4 rounded border-white/20 bg-white/[0.03] text-[#D4AF37] focus:ring-[#D4AF37]/20" />
+            <span className="text-white/60 text-sm">Active</span>
+          </label>
+          <button type="submit" disabled={loading}
+            className="w-full bg-[#D4AF37] hover:bg-[#C4A030] text-[#0A0A0A] font-medium py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50">
+            {loading ? "Saving..." : "Save Changes"}
+          </button>
         </form>
-      </Card>
+      </div>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );

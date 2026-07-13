@@ -22,34 +22,31 @@ const serviceList = [
 
 export default function Footer() {
   return (
-    <footer className="bg-dark-card border-t border-gold/10">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid md:grid-cols-3 gap-12">
-          <div>
+    <footer className="bg-[#0A0A0A] border-t border-white/[0.06]">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-20">
+        <div className="grid md:grid-cols-12 gap-12">
+          <div className="md:col-span-5">
             <Image
               src="/images/navibar.png"
               alt="Wedding by Kranthi"
               width={160}
               height={40}
-              className="h-10 w-auto mb-4"
+              className="h-9 w-auto mb-5"
             />
-            <p className="text-cream/50 leading-relaxed text-sm">
+            <p className="text-white/30 leading-relaxed text-sm max-w-sm">
               Capturing timeless moments with artistry, elegance, and passion.
-              Nellore&apos;s premier wedding photography and videography studio.
+              Nellore&apos;s premier wedding photography and videography studio since 2015.
             </p>
           </div>
 
-          <div>
-            <h3 className="text-gold font-semibold mb-4 uppercase tracking-wider text-xs">
-              Quick Links
+          <div className="md:col-span-3">
+            <h3 className="text-white/40 font-semibold mb-5 uppercase tracking-[0.2em] text-[11px]">
+              Navigation
             </h3>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {quickLinks.map((link) => (
                 <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-cream/50 hover:text-gold transition-colors text-sm"
-                  >
+                  <Link href={link.href} className="text-white/30 hover:text-[#D4AF37] transition-colors text-sm">
                     {link.label}
                   </Link>
                 </li>
@@ -57,14 +54,14 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div>
-            <h3 className="text-gold font-semibold mb-4 uppercase tracking-wider text-xs">
+          <div className="md:col-span-4">
+            <h3 className="text-white/40 font-semibold mb-5 uppercase tracking-[0.2em] text-[11px]">
               Services
             </h3>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {serviceList.map((service) => (
                 <li key={service}>
-                  <span className="text-cream/50 text-sm">{service}</span>
+                  <span className="text-white/20 text-sm">{service}</span>
                 </li>
               ))}
             </ul>
@@ -72,9 +69,14 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-gold/10 py-6">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-cream/30 text-sm">
-          &copy; {new Date().getFullYear()} Wedding by Kranthi. All rights reserved.
+      <div className="border-t border-white/[0.04] py-6">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-white/15 text-xs">
+            &copy; {new Date().getFullYear()} Wedding by Kranthi. All rights reserved.
+          </p>
+          <p className="text-white/10 text-xs">
+            Made with passion in Nellore, Andhra Pradesh
+          </p>
         </div>
       </div>
     </footer>

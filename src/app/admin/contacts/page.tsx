@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HiEnvelope, HiPhone, HiCalendar, HiTrash, HiEye } from "react-icons/hi2";
+import { HiEnvelope, HiPhone, HiTrash, HiEye, HiEnvelopeOpen } from "react-icons/hi2";
 import DeleteConfirm from "@/components/admin/DeleteConfirm";
 import Toast from "@/components/admin/Toast";
+import { TableSkeleton } from "@/components/admin/Skeleton";
 
 interface Contact {
   id: string;
@@ -18,23 +19,32 @@ interface Contact {
 }
 
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contacts, setContacts] = useState<Contact[] | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [viewContact, setViewContact] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   useEffect(() => {
-    fetch("/api/admin/contacts").then((r) => r.json()).then(setContacts);
+    fetch("/api/admin/contacts")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.error) setContacts(json);
+        else setContacts([]);
+      });
   }, []);
 
   const refetchContacts = () => {
-    fetch("/api/admin/contacts").then((r) => r.json()).then(setContacts);
+    fetch("/api/admin/contacts")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.error) setContacts(json);
+      });
   };
 
   async function markRead(id: string) {
     await fetch(`/api/admin/contacts/${id}`, {
-      method: "PUT",
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isRead: true }),
     });
@@ -58,150 +68,144 @@ export default function ContactsPage() {
     }
   }
 
+  if (!contacts) return <TableSkeleton rows={5} />;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">Contact Submissions</h1>
-        <p className="text-white/40 text-sm mt-1">View and manage inquiry messages</p>
+        <p className="text-white/30 text-sm mt-1">
+          {contacts.filter((c) => !c.isRead).length > 0
+            ? `${contacts.filter((c) => !c.isRead).length} unread submission${contacts.filter((c) => !c.isRead).length !== 1 ? "s" : ""}`
+            : "All messages read"}
+        </p>
       </div>
 
-      {/* Contacts list */}
-      <div className="space-y-3">
-        {contacts.map((contact) => (
-          <div
-            key={contact.id}
-            className={`bg-[#111111] border rounded-2xl p-5 transition-all hover:border-[#D4AF37]/30 ${
-              contact.isRead ? "border-white/5" : "border-[#D4AF37]/30"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37] font-semibold text-sm">
-                    {contact.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-white font-medium">{contact.name}</h3>
-                      {!contact.isRead && <span className="w-2 h-2 rounded-full bg-[#D4AF37]" />}
-                    </div>
-                    <div className="flex items-center gap-3 text-white/40 text-xs mt-0.5">
-                      <span className="flex items-center gap-1">
+      <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/[0.06]">
+                <th className="text-left px-6 py-4 text-white/30 font-medium text-xs uppercase tracking-wider w-8" />
+                <th className="text-left px-6 py-4 text-white/30 font-medium text-xs uppercase tracking-wider">Name</th>
+                <th className="text-left px-6 py-4 text-white/30 font-medium text-xs uppercase tracking-wider">Details</th>
+                <th className="text-left px-6 py-4 text-white/30 font-medium text-xs uppercase tracking-wider">Event</th>
+                <th className="text-left px-6 py-4 text-white/30 font-medium text-xs uppercase tracking-wider">Date</th>
+                <th className="text-right px-6 py-4 text-white/30 font-medium text-xs uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contacts.map((c) => (
+                <tr key={c.id} className={`border-b border-white/[0.03] last:border-0 transition-colors ${!c.isRead ? "bg-[#D4AF37]/[0.02] hover:bg-[#D4AF37]/[0.04]" : "hover:bg-white/[0.01]"}`}>
+                  <td className="px-6 py-4">
+                    {!c.isRead && <span className="w-2 h-2 rounded-full bg-[#D4AF37] inline-block" />}
+                  </td>
+                  <td className="px-6 py-4">
+                    <p className="text-white font-medium">{c.name}</p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 text-white/30 text-xs">
                         <HiEnvelope className="w-3 h-3" />
-                        {contact.email}
-                      </span>
-                      {contact.phone && (
-                        <span className="flex items-center gap-1">
+                        {c.email}
+                      </div>
+                      {c.phone && (
+                        <div className="flex items-center gap-1.5 text-white/20 text-xs">
                           <HiPhone className="w-3 h-3" />
-                          {contact.phone}
-                        </span>
+                          {c.phone}
+                        </div>
                       )}
                     </div>
-                  </div>
-                </div>
-                <p className="text-white/60 text-sm line-clamp-2 ml-13">{contact.message}</p>
-                <div className="flex items-center gap-4 mt-3 ml-13">
-                  {contact.eventType && (
-                    <span className="text-xs px-2.5 py-1 bg-white/5 text-white/60 rounded-lg capitalize">
-                      {contact.eventType}
-                    </span>
-                  )}
-                  {contact.date && (
-                    <span className="flex items-center gap-1 text-xs text-white/40">
-                      <HiCalendar className="w-3 h-3" />
-                      {contact.date}
-                    </span>
-                  )}
-                  <span className="text-xs text-white/30">
-                    {new Date(contact.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    setViewContact(contact);
-                    if (!contact.isRead) markRead(contact.id);
-                  }}
-                  className="p-2 bg-white/5 text-white/60 rounded-xl hover:bg-white/10 hover:text-white transition-colors"
-                >
-                  <HiEye className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setDeleteId(contact.id)}
-                  className="p-2 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 transition-colors"
-                >
-                  <HiTrash className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-white/40 text-xs">{c.eventType || "—"}</span>
+                  </td>
+                  <td className="px-6 py-4 text-white/30 text-xs">{new Date(c.createdAt).toLocaleDateString()}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => { setViewContact(c); if (!c.isRead) markRead(c.id); }}
+                        className="flex items-center gap-1.5 bg-white/[0.03] text-white/50 px-3 py-2 rounded-lg text-xs hover:bg-white/[0.06] hover:text-white transition-all"
+                      >
+                        <HiEye className="w-3.5 h-3.5" />
+                        View
+                      </button>
+                      <button
+                        onClick={() => setDeleteId(c.id)}
+                        className="flex items-center gap-1.5 bg-red-500/[0.06] text-red-400 px-3 py-2 rounded-lg text-xs hover:bg-red-500/[0.12] transition-all"
+                      >
+                        <HiTrash className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {contacts.length === 0 && (
-        <div className="text-center py-16 bg-[#111111] border border-white/5 rounded-2xl">
-          <HiEnvelope className="w-12 h-12 text-white/20 mx-auto mb-4" />
-          <p className="text-white/40">No contact submissions yet</p>
+        <div className="text-center py-20 bg-white/[0.02] border border-white/[0.06] rounded-2xl">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-white/[0.02] flex items-center justify-center mb-4">
+            <HiEnvelopeOpen className="w-8 h-8 text-white/10" />
+          </div>
+          <p className="text-white/20 font-medium">No contact submissions yet</p>
+        </div>
+      )}
+
+      {/* View modal */}
+      {viewContact && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewContact(null)} />
+          <div className="relative bg-[#111111] border border-white/[0.08] rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl">
+            <div className="p-6 space-y-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{viewContact.name}</h3>
+                  <p className="text-white/20 text-xs mt-1">{new Date(viewContact.createdAt).toLocaleString()}</p>
+                </div>
+                <button
+                  onClick={() => setViewContact(null)}
+                  className="text-white/30 hover:text-white transition-colors p-1"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-white/30 text-[11px] uppercase tracking-wider mb-1">Email</p>
+                  <p className="text-white/60 text-sm">{viewContact.email}</p>
+                </div>
+                <div>
+                  <p className="text-white/30 text-[11px] uppercase tracking-wider mb-1">Phone</p>
+                  <p className="text-white/60 text-sm">{viewContact.phone || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-white/30 text-[11px] uppercase tracking-wider mb-1">Event Date</p>
+                  <p className="text-white/60 text-sm">{viewContact.date || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-white/30 text-[11px] uppercase tracking-wider mb-1">Event Type</p>
+                  <p className="text-white/60 text-sm">{viewContact.eventType || "—"}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-white/30 text-[11px] uppercase tracking-wider mb-2">Message</p>
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
+                  <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{viewContact.message}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
       <DeleteConfirm open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete} title="Delete this contact?" loading={loading} />
-
-      {/* View modal */}
-      {viewContact && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setViewContact(null)}>
-          <div className="w-full max-w-lg bg-[#111111] border border-white/5 rounded-2xl p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-white">Contact Details</h2>
-              <button onClick={() => setViewContact(null)} className="text-white/40 hover:text-white">
-                ✕
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37] font-semibold text-lg">
-                  {viewContact.name.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h3 className="text-white font-medium">{viewContact.name}</h3>
-                  <p className="text-white/40 text-sm">{viewContact.email}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                {viewContact.phone && (
-                  <div className="bg-[#0c0c0c] rounded-xl p-3">
-                    <div className="text-white/40 text-xs mb-1">Phone</div>
-                    <div className="text-white text-sm">{viewContact.phone}</div>
-                  </div>
-                )}
-                {viewContact.eventType && (
-                  <div className="bg-[#0c0c0c] rounded-xl p-3">
-                    <div className="text-white/40 text-xs mb-1">Event Type</div>
-                    <div className="text-white text-sm capitalize">{viewContact.eventType}</div>
-                  </div>
-                )}
-                {viewContact.date && (
-                  <div className="bg-[#0c0c0c] rounded-xl p-3">
-                    <div className="text-white/40 text-xs mb-1">Event Date</div>
-                    <div className="text-white text-sm">{viewContact.date}</div>
-                  </div>
-                )}
-                <div className="bg-[#0c0c0c] rounded-xl p-3">
-                  <div className="text-white/40 text-xs mb-1">Submitted</div>
-                  <div className="text-white text-sm">{new Date(viewContact.createdAt).toLocaleDateString()}</div>
-                </div>
-              </div>
-              <div className="bg-[#0c0c0c] rounded-xl p-4">
-                <div className="text-white/40 text-xs mb-2">Message</div>
-                <p className="text-white text-sm whitespace-pre-wrap">{viewContact.message}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );

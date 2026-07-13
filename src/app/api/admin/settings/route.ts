@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
+import { siteSettingSchema } from "@/lib/validations";
 
 export async function GET() {
   const auth = await requireAuth();
@@ -19,10 +20,17 @@ export async function POST(request: NextRequest) {
   if (auth) return auth;
 
   try {
-    const { key, value } = await request.json();
-    if (!key) {
-      return NextResponse.json({ error: "Key is required" }, { status: 400 });
+    const body = await request.json();
+    const parsed = siteSettingSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.errors[0]?.message || "Validation failed" },
+        { status: 400 }
+      );
     }
+
+    const { key, value } = parsed.data;
     const existing = await prisma.siteSetting.findUnique({ where: { key } });
     if (existing) {
       const updated = await prisma.siteSetting.update({ where: { key }, data: { value } });

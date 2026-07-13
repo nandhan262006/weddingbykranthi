@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
+import { galleryImageSchema } from "@/lib/validations";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth();
@@ -25,15 +26,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const { id } = await params;
     const body = await request.json();
-    const data = {
-      title: String(body.title || ""),
-      src: String(body.src || ""),
-      alt: body.alt ? String(body.alt) : null,
-      span: body.span ? String(body.span) : null,
-      sortOrder: Number(body.sortOrder || 0),
-      isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
-    };
-    const image = await prisma.galleryImage.update({ where: { id }, data });
+    const parsed = galleryImageSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.errors[0]?.message || "Validation failed" },
+        { status: 400 }
+      );
+    }
+
+    const image = await prisma.galleryImage.update({ where: { id }, data: parsed.data });
     return NextResponse.json(image);
   } catch {
     return NextResponse.json({ error: "Failed to update gallery image" }, { status: 500 });

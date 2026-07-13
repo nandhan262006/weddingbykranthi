@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createToken, validatePassword } from "@/lib/auth";
+
+const loginSchema = z.object({
+  password: z.string().min(1, "Password is required").max(128),
+});
 
 const loginAttempts = new Map<string, number[]>();
 const MAX_ATTEMPTS = 5;
-const WINDOW = 15 * 60 * 1000; // 15 minutes
+const WINDOW = 15 * 60 * 1000;
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
@@ -23,15 +28,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { password } = await request.json();
-    if (!password) {
-      return NextResponse.json({ error: "Password required" }, { status: 400 });
+    const body = await request.json();
+    const parsed = loginSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Password is required" }, { status: 400 });
     }
-    const valid = await validatePassword(password);
+
+    const valid = await validatePassword(parsed.data.password);
     if (!valid) {
       loginAttempts.get(ip)?.push(Date.now());
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
+
     loginAttempts.delete(ip);
     const token = await createToken();
     const response = NextResponse.json({ success: true });

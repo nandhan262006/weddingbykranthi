@@ -2,13 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, TextInput, Textarea, Label, Card } from "flowbite-react";
 import FileUpload from "@/components/admin/FileUpload";
 import Toast from "@/components/admin/Toast";
-
-function slugify(text: string) {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
 
 export default function NewBlogPage() {
   const router = useRouter();
@@ -16,8 +11,8 @@ export default function NewBlogPage() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  function handleTitleChange(value: string) {
-    setForm({ ...form, title: value, slug: slugify(value) });
+  function titleToSlug(title: string) {
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -25,11 +20,15 @@ export default function NewBlogPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/blog", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, slug: form.slug || titleToSlug(form.title) }),
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setToast({ message: err.error || "Failed to create post", type: "error" });
+        setLoading(false);
+        return;
+      }
       setToast({ message: "Post created", type: "success" });
       setTimeout(() => router.push("/admin/blog"), 500);
     } catch {
@@ -39,38 +38,51 @@ export default function NewBlogPage() {
   }
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="mb-4 text-2xl font-bold text-white">New Blog Post</h1>
-      <Card>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <div className="max-w-2xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-white">New Blog Post</h1>
+        <p className="text-white/30 text-sm mt-1">Write a new blog article</p>
+      </div>
+      <div className="bg-[#0A0A0A] border border-white/[0.06] rounded-2xl p-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <Label htmlFor="title" className="mb-2 block">Title</Label>
-            <TextInput id="title" required value={form.title} onChange={(e) => handleTitleChange(e.target.value)} />
+            <label className="block text-white/40 text-xs font-medium uppercase tracking-wider mb-2">Title</label>
+            <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="w-full bg-white/[0.03] border border-white/[0.08] text-white px-4 py-2.5 rounded-xl text-sm focus:border-[#D4AF37]/50 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/20 transition-colors" />
           </div>
           <div>
-            <Label htmlFor="slug" className="mb-2 block">Slug</Label>
-            <TextInput id="slug" required value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
+            <label className="block text-white/40 text-xs font-medium uppercase tracking-wider mb-2">
+              Slug <span className="text-white/20 normal-case">(auto-generated from title if empty)</span>
+            </label>
+            <input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })}
+              className="w-full bg-white/[0.03] border border-white/[0.08] text-white font-mono px-4 py-2.5 rounded-xl text-sm focus:border-[#D4AF37]/50 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/20 transition-colors" />
           </div>
           <div>
-            <Label htmlFor="excerpt" className="mb-2 block">Excerpt</Label>
-            <Textarea id="excerpt" rows={2} value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} />
+            <label className="block text-white/40 text-xs font-medium uppercase tracking-wider mb-2">Excerpt</label>
+            <textarea rows={3} value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
+              className="w-full bg-white/[0.03] border border-white/[0.08] text-white px-4 py-2.5 rounded-xl text-sm focus:border-[#D4AF37]/50 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/20 transition-colors resize-none" />
           </div>
           <div>
-            <Label htmlFor="content" className="mb-2 block">Content</Label>
-            <Textarea id="content" rows={10} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
+            <label className="block text-white/40 text-xs font-medium uppercase tracking-wider mb-2">Content</label>
+            <textarea rows={12} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })}
+              className="w-full bg-white/[0.03] border border-white/[0.08] text-white px-4 py-2.5 rounded-xl text-sm focus:border-[#D4AF37]/50 focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/20 transition-colors resize-none" />
           </div>
           <div>
-            <Label className="mb-2 block">Cover Image</Label>
-            {form.coverImage && <img src={form.coverImage} alt="Preview" className="mb-2 h-32 w-32 object-cover rounded" />}
+            <label className="block text-white/40 text-xs font-medium uppercase tracking-wider mb-2">Cover Image</label>
+            {form.coverImage && <img src={form.coverImage} alt="Cover" className="mb-3 h-32 w-48 object-cover rounded-xl" />}
             <FileUpload onUpload={(url) => setForm({ ...form, coverImage: url })} folder="blog" />
           </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" id="isPublished" checked={form.isPublished} onChange={(e) => setForm({ ...form, isPublished: e.target.checked })} className="h-4 w-4" />
-            <Label htmlFor="isPublished">Published</Label>
-          </div>
-          <Button type="submit" disabled={loading}>{loading ? "Creating..." : "Create Post"}</Button>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" checked={form.isPublished} onChange={(e) => setForm({ ...form, isPublished: e.target.checked })}
+              className="w-4 h-4 rounded border-white/20 bg-white/[0.03] text-[#D4AF37] focus:ring-[#D4AF37]/20" />
+            <span className="text-white/60 text-sm">Published</span>
+          </label>
+          <button type="submit" disabled={loading}
+            className="w-full bg-[#D4AF37] hover:bg-[#C4A030] text-[#0A0A0A] font-medium py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50">
+            {loading ? "Publishing..." : "Create Post"}
+          </button>
         </form>
-      </Card>
+      </div>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );

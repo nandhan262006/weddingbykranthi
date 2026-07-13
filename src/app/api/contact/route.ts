@@ -1,20 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
+const contactSchema = z.object({
+  name: z.string().min(1, "Name is required").max(100),
+  email: z.string().email("Invalid email address").max(200),
+  phone: z.string().max(20).optional().or(z.literal("")),
+  date: z.string().max(20).optional().or(z.literal("")),
+  eventType: z.string().max(50).optional().or(z.literal("")),
+  message: z.string().min(1, "Message is required").max(2000),
+});
+
 const submissions = new Map<string, number[]>();
-const RATE_LIMIT = 5; // max submissions
-const WINDOW = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT = 5;
+const WINDOW = 60 * 60 * 1000;
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
   const times = (submissions.get(ip) || []).filter((t) => now - t < WINDOW);
   submissions.set(ip, times);
   return times.length >= RATE_LIMIT;
-}
-
-function sanitize(str: unknown, max = 500): string {
-  if (typeof str !== "string") return "";
-  return str.replace(/[<>"&]/g, "").trim().slice(0, max);
 }
 
 export async function POST(request: NextRequest) {
@@ -29,29 +34,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const name = sanitize(body.name, 100);
-    const email = sanitize(body.email, 200);
-    const phone = sanitize(body.phone, 20);
-    const date = sanitize(body.date, 20);
-    const eventType = sanitize(body.eventType, 50);
-    const message = sanitize(body.message, 2000);
+    const parsed = contactSchema.safeParse(body);
 
-    if (!name || !email || !message) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Name, email, and message are required" },
+        { error: parsed.error.errors[0]?.message || "Validation failed" },
         { status: 400 }
       );
     }
 
-    // Basic email validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
-    }
+    const { name, email, phone, date, eventType, message } = parsed.data;
 
     submissions.get(ip)?.push(Date.now());
 
     const submission = await prisma.contactSubmission.create({
-      data: { name, email, phone, date, eventType, message },
+      data: { name, email, phone: phone || null, date: date || null, eventType: eventType || null, message },
     });
 
     return NextResponse.json(submission, { status: 201 });

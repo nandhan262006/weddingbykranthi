@@ -46,9 +46,8 @@ async function main() {
     { title: "Traditional Ceremony", src: "/images/unnamed (3).webp", alt: "Traditional Ceremony", sortOrder: 4 },
     { title: "Joyful Moments", src: "/images/unnamed (4).webp", alt: "Joyful Moments", sortOrder: 5 },
     { title: "Elegant Details", src: "/images/unnamed (5).webp", alt: "Elegant Details", sortOrder: 6 },
-    { title: "Love Story", src: "/images/unnamed (6).webp", alt: "Love Story", sortOrder: 7 },
-    { title: "Grand Celebrations", src: "/images/unnamed (7).webp", alt: "Grand Celebrations", sortOrder: 8 },
-    { title: "Timeless Memories", src: "/images/unnamed (8).webp", alt: "Timeless Memories", sortOrder: 9 },
+    { title: "Grand Celebrations", src: "/images/unnamed (7).webp", alt: "Grand Celebrations", sortOrder: 7 },
+    { title: "Timeless Memories", src: "/images/unnamed (8).webp", alt: "Timeless Memories", sortOrder: 8 },
   ];
 
   for (const g of galleryImages) {

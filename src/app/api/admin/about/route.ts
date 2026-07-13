@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
+import { aboutSectionSchema } from "@/lib/validations";
 
 export async function GET() {
   try {
@@ -17,18 +18,21 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const data = {
-      title: String(body.title || ""),
-      content: String(body.content || ""),
-      image: body.image ? String(body.image) : null,
-      tags: body.tags ? String(body.tags) : null,
-    };
+    const parsed = aboutSectionSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.errors[0]?.message || "Validation failed" },
+        { status: 400 }
+      );
+    }
+
     const existing = await prisma.aboutSection.findFirst();
     if (existing) {
-      const updated = await prisma.aboutSection.update({ where: { id: existing.id }, data });
+      const updated = await prisma.aboutSection.update({ where: { id: existing.id }, data: parsed.data });
       return NextResponse.json(updated);
     }
-    const created = await prisma.aboutSection.create({ data });
+    const created = await prisma.aboutSection.create({ data: parsed.data });
     return NextResponse.json(created, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Failed to upsert about section" }, { status: 500 });

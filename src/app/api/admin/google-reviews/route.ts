@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
+import { googleReviewSchema } from "@/lib/validations";
 
 export async function GET() {
   const auth = await requireAuth();
@@ -20,15 +21,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const data = {
-      name: String(body.name || ""),
-      text: String(body.text || ""),
-      rating: Number(body.rating || 5),
-      date: body.date ? String(body.date) : null,
-      isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
-      sortOrder: Number(body.sortOrder || 0),
-    };
-    const review = await prisma.googleReview.create({ data });
+    const parsed = googleReviewSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.errors[0]?.message || "Validation failed" },
+        { status: 400 }
+      );
+    }
+
+    const review = await prisma.googleReview.create({ data: parsed.data });
     return NextResponse.json(review, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Failed to create review" }, { status: 500 });

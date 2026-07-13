@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
+import { blogPostSchema } from "@/lib/validations";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth();
@@ -25,20 +26,22 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const { id } = await params;
     const body = await request.json();
-    const slug = String(body.slug || "");
+    const parsed = blogPostSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.errors[0]?.message || "Validation failed" },
+        { status: 400 }
+      );
+    }
+
+    const { slug } = parsed.data;
     const existingSlug = await prisma.blogPost.findFirst({ where: { slug, NOT: { id } } });
     if (existingSlug) {
       return NextResponse.json({ error: "A post with this slug already exists" }, { status: 409 });
     }
-    const data = {
-      title: String(body.title || ""),
-      slug,
-      excerpt: body.excerpt ? String(body.excerpt) : null,
-      content: body.content ? String(body.content) : null,
-      coverImage: body.coverImage ? String(body.coverImage) : null,
-      isPublished: Boolean(body.isPublished),
-    };
-    const post = await prisma.blogPost.update({ where: { id }, data });
+
+    const post = await prisma.blogPost.update({ where: { id }, data: parsed.data });
     return NextResponse.json(post);
   } catch {
     return NextResponse.json({ error: "Failed to update blog post" }, { status: 500 });

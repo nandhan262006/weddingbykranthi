@@ -1,15 +1,17 @@
 export default function JsonLd() {
+  const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://weddingbykranthi.vercel.app";
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     name: "Wedding by Kranthi",
     alternateName: "Kranthi Photography",
     description: "Nellore's premier wedding photography and videography studio. Capturing timeless moments with artistry, elegance, and passion.",
-    url: "https://weddingbykranthi.vercel.app",
+    url: siteUrl,
     telephone: "+919885947958",
     email: "info@kranthiphotography.in",
-    image: "https://weddingbykranthi.vercel.app/images/og-image.webp",
-    logo: "https://weddingbykranthi.vercel.app/images/navibar.png",
+    image: `${siteUrl}/images/og-image.webp`,
+    logo: `${siteUrl}/images/navibar.png`,
     address: {
       "@type": "PostalAddress",
       addressLocality: "Nellore",
